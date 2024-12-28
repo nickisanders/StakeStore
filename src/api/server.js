@@ -27,20 +27,6 @@ app.get('/', (req, res) => {
     res.send('Welcome to StakeStore API!');
 });
 
-// Wallet Connection (Dummy Implementation)
-app.post('/auth/connect-wallet', (req, res) => {
-    const { walletAddress } = req.body;
-    if (walletAddress) {
-        res.json({
-            success: true,
-            message: 'Wallet connected',
-            walletAddress,
-        });
-    } else {
-        res.status(400).json({ success: false, message: 'Wallet address is required' });
-    }
-});
-
 // Get User Assets
 app.get('/assets', (req, res) => {
     const { walletAddress } = req.query;
