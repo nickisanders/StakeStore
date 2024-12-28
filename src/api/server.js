@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const pendleService = require('../services/pendleService');
 
 const app = express();
 const PORT = 3001; // API server runs on port 3001
@@ -20,6 +21,8 @@ const dummyPools = [
 ];
 
 // Routes
+
+// default
 app.get('/', (req, res) => {
     res.send('Welcome to StakeStore API!');
 });
@@ -52,15 +55,18 @@ app.get('/assets', (req, res) => {
 });
 
 // Get Active Markets
-app.get('/markets', (req, res) => {
-    res.json({
-        success: true,
-        pools: dummyPools,
-    });
+app.get('/markets', async (req, res) => {
+    try {
+        const activeMarkets = await pendleService.getActiveMarkets();
+        res.json({ success: true, data: activeMarkets });
+    } catch (error) {
+        console.error(`Error in /markets API:`, error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch active markets.' });
+    }
 });
 
 // Endpoint to perform a token swap
-router.post('/swap', async (req, res) => {
+app.post('/swap', async (req, res) => {
     try {
         const swapData = req.body; // Assumes the frontend sends required data in the body
         const swapResult = await pendleService.performSwap(swapData);
@@ -72,7 +78,7 @@ router.post('/swap', async (req, res) => {
 });
 
 // Endpoint to fetch redemption options for a user
-router.get('/redemptions/:address', async (req, res) => {
+app.get('/redemptions/:address', async (req, res) => {
     try {
         const userAddress = req.params.address;
         const options = await pendleService.getRedemptionOptions(userAddress);

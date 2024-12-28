@@ -2,15 +2,16 @@ const axios = require('axios');
 
 // Base URL for the Pendle hosted API
 const PENDLE_API_BASE_URL = 'https://api-v2.pendle.finance/core';
-const chainId = 8453; // BASE
+const CHAIN_ID = 8453; // Use BASE chain by default
 
 /**
- * Fetch available staking pools from Pendle.
+ * Fetch available staking pools (active markets) from Pendle.
+ * @param {string} chainId - The chain ID (default: BASE).
  * @returns {Promise<Object>} List of available staking pools.
  */
 const getActiveMarkets = async () => {
     try {
-        const response = await axios.get(`${PENDLE_API_BASE_URL}/v1/${chainId}/markets/active`);
+        const response = await axios.get(`${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/markets/active`);
         return response.data;
     } catch (error) {
         console.error('Error fetching active markets:', error.message);
@@ -20,12 +21,14 @@ const getActiveMarkets = async () => {
 
 /**
  * Perform a token swap on Pendle.
+ * @param {string} market - The market ID for the swap.
  * @param {Object} swapData - The data required for the swap.
+ * @param {string} chainId - The chain ID (default: BASE).
  * @returns {Promise<Object>} The result of the swap.
  */
-const performSwap = async (swapData) => {
+const performSwap = async (market, swapData) => {
     try {
-        const response = await axios.post(`${PENDLE_API_BASE_URL}/v1/sdk/${chainId}/markets/{market}/swap`, swapData);
+        const response = await axios.post(`${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/markets/${market}/swap`, swapData);
         return response.data;
     } catch (error) {
         console.error('Error performing swap:', error.message);
@@ -36,12 +39,13 @@ const performSwap = async (swapData) => {
 /**
  * Fetch token redemption options.
  * @param {string} userAddress - The user's wallet address.
+ * @param {string} chainId - The chain ID (default: BASE).
  * @returns {Promise<Object>} Redemption options for the user.
  */
 const getRedemptionOptions = async (userAddress) => {
     try {
         const response = await axios.get(
-            `${PENDLE_API_BASE_URL}/positions?owner=${userAddress}`
+            `${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/positions?owner=${userAddress}`
         );
         return response.data;
     } catch (error) {
