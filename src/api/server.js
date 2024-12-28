@@ -51,13 +51,38 @@ app.get('/assets', (req, res) => {
     }
 });
 
-// Get Staking Pools
-app.get('/pools', (req, res) => {
+// Get Active Markets
+app.get('/markets', (req, res) => {
     res.json({
         success: true,
         pools: dummyPools,
     });
 });
+
+// Endpoint to perform a token swap
+router.post('/swap', async (req, res) => {
+    try {
+        const swapData = req.body; // Assumes the frontend sends required data in the body
+        const swapResult = await pendleService.performSwap(swapData);
+        res.json({ success: true, data: swapResult });
+    } catch (error) {
+        console.error('Error in /swap API:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to perform token swap.' });
+    }
+});
+
+// Endpoint to fetch redemption options for a user
+router.get('/redemptions/:address', async (req, res) => {
+    try {
+        const userAddress = req.params.address;
+        const options = await pendleService.getRedemptionOptions(userAddress);
+        res.json({ success: true, data: options });
+    } catch (error) {
+        console.error('Error in /redemptions API:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch redemption options.' });
+    }
+});
+
 
 // Start the server
 app.listen(PORT, () => {
