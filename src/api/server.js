@@ -51,10 +51,54 @@ app.get('/markets', async (req, res) => {
     }
 });
 
+/**
+ * API endpoint to calculate the APY for staking with Pendle.
+ */
+app.post('/api/calculateRate', async (req, res) => {
+    const { asset, lockupPeriod } = req.body;
+
+    // Validate the input data
+    if (!asset || typeof lockupPeriod !== 'number' || lockupPeriod <= 0) {
+        return res.status(400).json({ error: 'Invalid input data' });
+    }
+
+    try {
+        const apyData = await pendleService.calculateRate(asset, lockupPeriod);
+        res.status(200).json(apyData);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Mint PT/YT tokens
+app.post('/api/mintTokens', async (req, res) => {
+    const { receiver, yt, slippage, tokenIn, amountIn } = req.body;
+
+    // Validate the input data
+    if (!receiver || !yt || typeof slippage !== 'number' || !tokenIn || !amountIn) {
+        return res.status(400).json({ error: 'Invalid input data' });
+    }
+
+    const mintData = {
+        receiver,
+        yt,
+        slippage,
+        tokenIn,
+        amountIn,
+    };
+
+    try {
+        const result = await pendleService.mintTokens(mintData);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Endpoint to perform a token swap
 app.post('/swap', async (req, res) => {
     try {
-        const swapData = req.body; // Assumes the frontend sends required data in the body
+        const swapData = req.body;
         const swapResult = await pendleService.performSwap(swapData);
         res.json({ success: true, data: swapResult });
     } catch (error) {
