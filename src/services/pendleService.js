@@ -106,8 +106,7 @@ const calculateRate = async (asset, lockupPeriod) => {
  * Mint PT/YT tokens.
  * @param {Object} mintData - The data required to mint PT/YT tokens.
  * mintData = {
- *      receiver,
-        yt,
+ *      yt,
         slippage,
         tokenIn,
         amountIn
@@ -116,7 +115,16 @@ const calculateRate = async (asset, lockupPeriod) => {
  */
 const mintTokens = async (mintData) => {
     try {
-        const response = await axios.post(`${PENDLE_API_BASE_URL}/v1/sdk/${CHAIN_ID}/mint`, mintData, {
+        // Use the receiver address from the environment variable
+        const receiver = process.env.TREASURY_ADDRESS;
+        if (!receiver) {
+            throw new Error('Receiver address is not set in the environment variables.');
+        }
+
+        // Add the receiver address to the mintData
+        const mintDataWithReceiver = { ...mintData, receiver };
+
+        const response = await axios.post(`${PENDLE_API_BASE_URL}/v1/sdk/${CHAIN_ID}/mint`, mintDataWithReceiver, {
             headers: { 'Content-Type': 'application/json' },
         });
 
@@ -174,7 +182,9 @@ const getRedemptionOptions = async (userAddress) => {
 module.exports = {
     getActiveMarkets,
     fetchActiveMarketsAndWriteToFile,
+    readActiveMarketsFromFile,
     getMarketData,
+    calculateRate,
     mintTokens,
     performSwap,
     getRedemptionOptions,
