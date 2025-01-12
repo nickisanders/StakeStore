@@ -40,15 +40,15 @@ app.get('/assets', (req, res) => {
     }
 });
 
-// Get Active Markets
+// Get Active Markets and write to file
 app.get('/markets', async (req, res) => {
-    try {
-        const activeMarkets = await pendleService.getActiveMarkets();
-        res.json({ success: true, data: activeMarkets });
-    } catch (error) {
-        console.error(`Error in /markets API:`, error.message);
-        res.status(500).json({ success: false, error: 'Failed to fetch active markets.' });
-    }
+    pendleService.fetchActiveMarketsAndWriteToFile()
+        .then(() => {
+            console.log('Active markets data fetched and written to file successfully.');
+        })
+        .catch((error) => {
+            console.error('Error:', error.message);
+        });
 });
 
 /**

@@ -1,4 +1,5 @@
 const axios = require('axios');
+const fs = require('fs');
 require('dotenv').config();
 
 // Base URL for the Pendle hosted API
@@ -14,6 +15,45 @@ const getActiveMarkets = async () => {
     try {
         const response = await axios.get(`${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/markets/active`);
         return response.data;
+    } catch (error) {
+        console.error('Error fetching active markets:', error.response ? error.response.data : error.message);
+        throw new Error('Failed to fetch active markets.');
+    }
+};
+
+/**
+ * Read active markets from the file.
+ * @returns {Promise<Object>} The active markets data.
+ */
+const readActiveMarketsFromFile = () => {
+    try {
+        // Read the file content
+        const data = fs.readFileSync('active_markets.json', 'utf-8');
+        // Parse the JSON string into a JavaScript object
+        const activeMarkets = JSON.parse(data);
+        return activeMarkets;
+    } catch (error) {
+        console.error('Error reading active markets from file:', error.message);
+        throw new Error('Failed to read active markets from file.');
+    }
+};
+
+/**
+ * Fetch active markets from Pendle and write the results to a file.
+ * @returns {Promise<void>}
+ */
+const fetchActiveMarketsAndWriteToFile = async () => {
+    try {
+        // Fetch active markets from the Pendle API
+        const response = await axios.get(`${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/markets/active`);
+        const activeMarkets = response.data;
+
+        // Convert the result to a JSON string
+        const dataToWrite = JSON.stringify(activeMarkets, null, 2);
+
+        // Write the result to a file
+        fs.writeFileSync('active_markets.json', dataToWrite, 'utf-8');
+        console.log('Active markets data has been written to active_markets.json');
     } catch (error) {
         console.error('Error fetching active markets:', error.response ? error.response.data : error.message);
         throw new Error('Failed to fetch active markets.');
@@ -91,18 +131,25 @@ const mintTokens = async (mintData) => {
  * Perform a token swap on Pendle.
  * @param {string} market - The market ID for the swap.
  * @param {Object} swapData - The data required for the swap.
- * @param {number} chainId - The chain ID (default: BASE).
  * @returns {Promise<Object>} The result of the swap.
  */
-const performSwap = async (market, swapData) => {
+const performSwap = async (poolId, token, requiredAmount, treasuryWallet) => {
+    const swapData = {
+        poolId,
+        token,
+        amount: requiredAmount,
+        recipient: treasuryWallet, // StakeStore wallet receives PT tokens
+    };
+
     try {
-        const response = await axios.post(`${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/markets/${market}/swap`, swapData, {
-            headers: { 'Content-Type': 'application/json' },
-        });
-        return response.data;
+        const response = await axios.post(
+            `${PENDLE_API_BASE_URL}/${CHAIN_ID}/markets/${poolId}/swap`,
+            swapData
+        );
+        return response.data; // Swap result
     } catch (error) {
-        console.error('Error performing swap:', error.response ? error.response.data : error.message);
-        throw new Error('Failed to perform token swap.');
+        console.error('Error performing swap:', error.message);
+        throw new Error('Failed to perform stake swap.');
     }
 };
 
@@ -126,8 +173,8 @@ const getRedemptionOptions = async (userAddress) => {
 
 module.exports = {
     getActiveMarkets,
+    fetchActiveMarketsAndWriteToFile,
     getMarketData,
-    calculateRate,
     mintTokens,
     performSwap,
     getRedemptionOptions,
