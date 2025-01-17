@@ -103,7 +103,7 @@ const calculateRate = async (asset, lockupPeriod) => {
 };
 
 /**
- * Mint PT/YT tokens.
+ * Create mint PT/YT tokens transaction.
  * @param {Object} mintData - The data required to mint PT/YT tokens.
  * mintData = {
  *      yt,
@@ -111,9 +111,9 @@ const calculateRate = async (asset, lockupPeriod) => {
         tokenIn,
         amountIn
     }
- * @returns {Promise<Object>} The result of the minting process.
+ * @returns {Promise<Object>} The minting transaction to be submitted onchain.
  */
-const mintTokens = async (mintData) => {
+const createMintTokensTransaction = async (mintData) => {
     try {
         // Use the receiver address from the environment variable
         const receiver = process.env.TREASURY_ADDRESS;
@@ -124,7 +124,8 @@ const mintTokens = async (mintData) => {
         // Add the receiver address to the mintData
         const mintDataWithReceiver = { ...mintData, receiver };
 
-        const response = await axios.post(`${PENDLE_API_BASE_URL}/v1/sdk/${CHAIN_ID}/mint`, mintDataWithReceiver, {
+        const response = await axios.get(`${PENDLE_API_BASE_URL}/v1/sdk/${CHAIN_ID}/mint`, {
+            params: mintDataWithReceiver,
             headers: { 'Content-Type': 'application/json' },
         });
 
@@ -146,7 +147,7 @@ const performSwap = async (poolId, token, requiredAmount, treasuryWallet) => {
         poolId,
         token,
         amount: requiredAmount,
-        recipient: treasuryWallet, // StakeStore wallet receives PT tokens
+        recipient,
     };
 
     try {
@@ -185,7 +186,7 @@ module.exports = {
     readActiveMarketsFromFile,
     getMarketData,
     calculateRate,
-    mintTokens,
+    createMintTokensTransaction,
     performSwap,
     getRedemptionOptions,
 };
