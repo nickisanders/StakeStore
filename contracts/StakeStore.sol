@@ -1,232 +1,97 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-interface IPendleRouter {
-    function deposit(
-        address underlyingAsset,
-        uint256 amount
-    ) external returns (uint256);
-
-    function withdraw(
-        address underlyingAsset,
-        uint256 amount
-    ) external returns (uint256);
-}
-
-interface IUniswapV2Router {
-    function swapExactTokensForTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory amounts);
-}
-
 contract StakeStore is Ownable {
-    struct UserDeposit {
-        address user;
-        address asset;
-        uint256 amount;
-        uint256 lockDuration;
-        uint256 depositTime;
-    }
-
-    struct StakeInfo {
-        uint256 depositAmount;
-        uint256 ptAmount;
-        uint256 ytAmount;
-    }
-
-    // === State Variables ===
-    address public pendleRouter;
-    address public uniswapRouter;
-    address public treasuryWallet;
-
-    uint256 public totalDeposits;
-    mapping(address => UserDeposit[]) public userDeposits;
-    mapping(address => StakeInfo) public userStakes;
-
-    // === Events ===
-    event DepositInitiated(
+    event StakeInitiated(
         address indexed user,
-        address asset,
+        address indexed token,
         uint256 amount,
-        uint256 lockDuration
+        address indexed pool
     );
-    event YTSold(address indexed user, uint256 ytAmount, uint256 cashAmount);
-    event PointsIssued(address indexed user, uint256 points);
-    event FundsWithdrawn(address indexed user, address asset, uint256 amount);
+    event PTYTReceived(
+        address indexed pool,
+        uint256 ptAmount,
+        uint256 ytAmount
+    );
 
-    // === Constructor ===
-    constructor(
-        address _pendleRouter,
-        address _uniswapRouter,
-        address _treasuryWallet
-    ) Ownable(msg.sender) {
-        pendleRouter = _pendleRouter;
-        uniswapRouter = _uniswapRouter;
-        treasuryWallet = _treasuryWallet;
-    }
-
-    // === Deposit Functions ===
+    // Mapping to track stakes (if necessary)
+    mapping(address => mapping(address => uint256)) public stakes;
 
     /**
-     * @notice Allows a user to deposit supported assets for staking.
-     * @param asset The address of the token to deposit.
-     * @param amount The amount of the asset to deposit.
-     * @param lockDuration The lock duration for the deposit.
+     * @dev Function for users to stake tokens.
+     * Emits a StakeInitiated event.
      */
-    function deposit(
-        address asset,
-        uint256 amount,
-        uint256 lockDuration
-    ) external {
-        require(amount > 0, "Deposit amount must be greater than zero");
-        require(lockDuration > 0, "Lock duration must be specified");
+    function stakeTokens(address token, uint256 amount, address pool) external {
+        require(amount > 0, "Amount must be greater than zero");
 
         // Transfer tokens from the user to this contract
-        IERC20(asset).transferFrom(msg.sender, address(this), amount);
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
 
-        // Interact with Pendle to deposit the asset and receive PT and YT
-        uint256 ptAmount = IPendleRouter(pendleRouter).deposit(asset, amount);
+        // Update stakes mapping (if needed)
+        stakes[msg.sender][token] += amount;
 
-        // Store the user's deposit information
-        UserDeposit memory depositInfo = UserDeposit({
-            user: msg.sender,
-            asset: asset,
-            amount: amount,
-            lockDuration: lockDuration,
-            depositTime: block.timestamp
-        });
-
-        userDeposits[msg.sender].push(depositInfo);
-
-        // Track user's stake information
-        userStakes[msg.sender] = StakeInfo({
-            depositAmount: amount,
-            ptAmount: ptAmount,
-            ytAmount: amount - ptAmount // Assuming YT is the difference
-        });
-
-        totalDeposits += amount;
-
-        emit DepositInitiated(msg.sender, asset, amount, lockDuration);
-    }
-
-    // === Yield Management ===
-
-    /**
-     * @notice Sells the Yield Tokens (YT) for cash via Uniswap or another DEX.
-     * @param ytAmount The amount of YT to sell.
-     * @param token The address of the YT token being converted.
-     */
-    function _sellYTForCash(uint256 ytAmount, address token) internal {
-        require(ytAmount > 0, "No YT tokens to sell");
-
-        // Declare the path as an array of addresses (2 addresses: token → treasury)
-        address[] memory path = new address[](2);
-        path[0] = token; // YT token address
-        path[1] = treasuryWallet; // Treasury wallet receives the cash
-
-        uint256[] memory amounts = IUniswapV2Router(uniswapRouter)
-            .swapExactTokensForTokens(
-                ytAmount,
-                0, // accept any amount
-                path,
-                treasuryWallet, // cash goes to treasury
-                block.timestamp + 3600 // 1 hour deadline
-            );
-
-        emit YTSold(msg.sender, ytAmount, amounts[amounts.length - 1]);
-    }
-
-    // === Reward Management ===
-
-    /**
-     * @notice Issues reward points to a user for selling YT.
-     * @param user The address of the user to reward.
-     * @param cashAmount The amount of cash generated by the YT sale.
-     */
-    function _issueRewardPoints(address user, uint256 cashAmount) internal {
-        uint256 points = cashAmount / 10; // Example logic: 10% of the cash amount as points
-        emit PointsIssued(user, points);
-    }
-
-    // === Withdrawal Functions ===
-
-    /**
-     * @notice Allows the user to withdraw their principal token (PT) and cash out.
-     * @param asset The address of the token to withdraw.
-     * @param amount The amount to withdraw.
-     */
-    function withdraw(address asset, uint256 amount) external {
-        require(amount > 0, "Withdrawal amount must be greater than zero");
-
-        // Interact with Pendle to withdraw the principal token (PT) to this contract
-        IPendleRouter(pendleRouter).withdraw(asset, amount);
-
-        // Send the asset back to the user
-        IERC20(asset).transfer(msg.sender, amount);
-
-        emit FundsWithdrawn(msg.sender, asset, amount);
-    }
-
-    // === View Functions ===
-
-    /**
-     * @notice Returns the user's deposits.
-     * @param user The address of the user.
-     * @return UserDeposit[] The list of deposits made by the user.
-     */
-    function getUserDeposits(
-        address user
-    ) external view returns (UserDeposit[] memory) {
-        return userDeposits[user];
+        // Emit StakeInitiated event
+        emit StakeInitiated(msg.sender, token, amount, pool);
     }
 
     /**
-     * @notice Returns the user's stake information.
-     * @param user The address of the user.
-     * @return StakeInfo The user's stake info.
+     * @dev Function for handling the receipt of PT and YT tokens after minting.
+     * Emits a PTYTReceived event.
      */
-    function getUserStake(
-        address user
-    ) external view returns (StakeInfo memory) {
-        return userStakes[user];
+    function receivePTYT(
+        address pool,
+        uint256 ptAmount,
+        uint256 ytAmount
+    ) external {
+        require(ptAmount > 0, "PT amount must be greater than zero");
+        require(ytAmount > 0, "YT amount must be greater than zero");
+
+        // Emit PTYTReceived event
+        emit PTYTReceived(pool, ptAmount, ytAmount);
     }
 
-    // === Utility Functions ===
-
     /**
-     * @notice Updates the treasury wallet address.
-     * @param newTreasuryWallet The new treasury wallet address.
+     * @dev Function for the owner to transfer out tokens from the contract.
+     * Only callable by the owner.
      */
-    function updateTreasuryWallet(
-        address newTreasuryWallet
+    function transferOutTokens(
+        address token,
+        address to,
+        uint256 amount
     ) external onlyOwner {
-        require(newTreasuryWallet != address(0), "Invalid address");
-        treasuryWallet = newTreasuryWallet;
+        require(amount > 0, "Amount must be greater than zero");
+        require(to != address(0), "Invalid recipient address");
+        require(
+            IERC20(token).balanceOf(address(this)) >= amount,
+            "Insufficient contract balance"
+        );
+
+        // Transfer tokens from the contract to the specified address
+        IERC20(token).transfer(to, amount);
     }
 
     /**
-     * @notice Updates the Pendle Router address.
-     * @param newPendleRouter The new Pendle Router address.
+     * @dev Function for the owner to withdraw Ether from the contract (if needed).
+     * Only callable by the owner.
      */
-    function updatePendleRouter(address newPendleRouter) external onlyOwner {
-        require(newPendleRouter != address(0), "Invalid address");
-        pendleRouter = newPendleRouter;
+    function withdrawEther(
+        address payable to,
+        uint256 amount
+    ) external onlyOwner {
+        require(amount > 0, "Amount must be greater than zero");
+        require(to != address(0), "Invalid recipient address");
+        require(
+            address(this).balance >= amount,
+            "Insufficient contract balance"
+        );
+
+        // Transfer Ether
+        to.transfer(amount);
     }
 
-    /**
-     * @notice Updates the Uniswap Router address.
-     * @param newUniswapRouter The new Uniswap Router address.
-     */
-    function updateUniswapRouter(address newUniswapRouter) external onlyOwner {
-        require(newUniswapRouter != address(0), "Invalid address");
-        uniswapRouter = newUniswapRouter;
-    }
+    // Fallback function to receive Ether
+    receive() external payable {}
 }
