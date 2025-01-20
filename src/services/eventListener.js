@@ -3,6 +3,7 @@ require("dotenv").config();
 
 // Load environment variables
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
+const INFURA_URL = `https://base-mainnet.infura.io/v3/${INFURA_PROJECT_ID}`;
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS; // Replace with your deployed contract address
 const ABI = [
     // Add the contract's ABI here
@@ -13,7 +14,7 @@ const ABI = [
 async function listenToEvents() {
     try {
         // Connect to the network
-        const provider = new ethers.JsonRpcProvider(`https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`);
+        const provider = new ethers.JsonRpcProvider(INFURA_URL);
 
         // Connect to the contract
         const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
