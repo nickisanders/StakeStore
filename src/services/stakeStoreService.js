@@ -1,5 +1,7 @@
 const { ethers } = require('ethers');
 require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const { createMintTokensTransaction } = require('./pendleService');
 
 // Environment variables
@@ -18,6 +20,7 @@ const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 // ABI of the StakeStore smart contract
 const STAKESTORE_ABI = [
     "function stakeTokens(address token, uint256 amount, address pool) public",
+    "function stakeTokens(address token, uint256 amount, address pool) external",
 ];
 
 // Create an instance of the StakeStore contract
@@ -58,13 +61,35 @@ const approveToken = async (tokenAddress, spender, amount) => {
 };
 
 /**
- * Send a transaction to mint PT/YT tokens using the data from createMintTokensTransaction.
- * mintData = {
- *      yt,
-        slippage,
-        tokenIn,
-        amountIn
+ * Prepare inital staking transaction data for frontend
+ */
+const getStakeTransactionData = async (req, res) => {
+    try {
+        const { userAddress, token, amount, pool } = req.body;
+
+        if (!userAddress || !token || !amount || !pool) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+
+        console.log(`Preparing transaction for ${userAddress}...`);
+
+        // Construct raw transaction data
+        const txData = await stakeStoreContract.populateTransaction.stakeTokens(token, amount, pool);
+
+        res.json({
+            to: CONTRACT_ADDRESS,
+            data: txData.data,
+            value: "0",
+        });
+
+    } catch (error) {
+        console.error("Error constructing stake transaction:", error.message);
+        res.status(500).json({ error: "Failed to generate transaction data" });
     }
+};
+
+/**
+ * Send a transaction to mint PT/YT tokens using the data from createMintTokensTransaction.
  */
 const stakeOnPendle = async (user, token, amount, pool) => {
     try {
@@ -102,7 +127,7 @@ const stakeOnPendle = async (user, token, amount, pool) => {
 
         console.log('Transaction confirmed:', receipt.transactionHash);
 
-        //TODO: Send minted PT tokens back
+        //TODO: Send minted PT tokens back, calculate and store points, sell YT tokens, send USDC to Coinbase account
 
     } catch (error) {
         console.error('Error sending mint tokens transaction:', error.message);
@@ -137,6 +162,7 @@ const getActiveMarkets = (req, res) => {
 
 module.exports = {
     approveToken,
+    getStakeTransactionData,
     stakeOnPendle,
     getActiveMarkets,
 };

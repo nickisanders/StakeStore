@@ -1,126 +1,95 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pendleService = require('../services/pendleService');
+const fs = require('fs');
+const path = require('path');
+const { ethers } = require('ethers');
+const stakeStoreService = require('../services/stakeStoreService');
 
 const app = express();
-const PORT = 3001; // API server runs on port 3001
+const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors()); // Enable cross-origin requests
+app.use(express.json()); // Parse JSON requests
 
-// Dummy data
-const dummyAssets = [
-    { asset: 'ETH', balance: 2.5, staked: 1.0 },
-    { asset: 'USDC', balance: 1000.0, staked: 500.0 },
-];
-
-const dummyPools = [
-    { poolId: '1', asset: 'ETH', apy: 12.5, lockupPeriod: 90, minStake: 0.1 },
-    { poolId: '2', asset: 'USDC', apy: 8.0, lockupPeriod: 180, minStake: 100.0 },
-];
-
-// Routes
-
-// default
+// Base Route (Health Check)
 app.get('/', (req, res) => {
-    res.send('Welcome to StakeStore API!');
+    res.send("✅ StakeStoreService API is running!");
 });
 
-// Get User Assets
-app.get('/assets', (req, res) => {
-    const { walletAddress } = req.query;
-    if (walletAddress) {
-        res.json({
-            success: true,
-            assets: dummyAssets,
-        });
-    } else {
-        res.status(400).json({ success: false, message: 'Wallet address is required' });
-    }
-});
+// 📌 Fetch Active Markets
+app.get('/api/markets', stakeStoreService.getActiveMarkets);
 
-// Get Active Markets and write to file
-app.get('/markets', async (req, res) => {
-    pendleService.fetchActiveMarketsAndWriteToFile()
-        .then(() => {
-            console.log('Active markets data fetched and written to file successfully.');
-        })
-        .catch((error) => {
-            console.error('Error:', error.message);
-        });
-});
-
-/**
- * API endpoint to calculate the APY for staking with Pendle.
- */
-app.post('/api/calculateRate', async (req, res) => {
-    const { asset, lockupPeriod } = req.body;
-
-    // Validate the input data
-    if (!asset || typeof lockupPeriod !== 'number' || lockupPeriod <= 0) {
-        return res.status(400).json({ error: 'Invalid input data' });
-    }
-
+// 📌 Approve Token Transfer
+app.post('/api/approveToken', async (req, res) => {
     try {
-        const apyData = await pendleService.calculateRate(asset, lockupPeriod);
-        res.status(200).json(apyData);
+        const { token, spender, amount } = req.body;
+        if (!token || !spender || !amount) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+
+        const txHash = await stakeStoreService.approveToken(token, spender, amount);
+        res.json({ status: "success", txHash });
+
     } catch (error) {
+        console.error("Error approving token:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Mint PT/YT tokens
-app.post('/api/mintTokens', async (req, res) => {
-    const { receiver, yt, slippage, tokenIn, amountIn } = req.body;
-
-    // Validate the input data
-    if (!receiver || !yt || typeof slippage !== 'number' || !tokenIn || !amountIn) {
-        return res.status(400).json({ error: 'Invalid input data' });
-    }
-
-    const mintData = {
-        receiver,
-        yt,
-        slippage,
-        tokenIn,
-        amountIn,
-    };
-
+// 📌 Get Staking Transaction Data (Frontend Signs)
+app.post('/api/getStakeTransactionData', async (req, res) => {
     try {
-        const result = await pendleService.mintTokens(mintData);
-        res.status(200).json(result);
+        const { userAddress, token, amount, pool } = req.body;
+        if (!userAddress || !token || !amount || !pool) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+
+        const txData = await stakeStoreService.getStakeTransactionData(req, res);
+        res.json(txData);
+
     } catch (error) {
+        console.error("Error fetching stake transaction data:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Endpoint to perform a token swap
-app.post('/swap', async (req, res) => {
+// 📌 Stake Tokens on Pendle (Backend Handles)
+app.post('/api/stakeOnPendle', async (req, res) => {
     try {
-        const swapData = req.body;
-        const swapResult = await pendleService.performSwap(swapData);
-        res.json({ success: true, data: swapResult });
+        const { user, token, amount, pool } = req.body;
+        if (!user || !token || !amount || !pool) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+
+        const receipt = await stakeStoreService.stakeOnPendle(user, token, amount, pool);
+        res.json({ status: "success", txHash: receipt.transactionHash });
+
     } catch (error) {
-        console.error('Error in /swap API:', error.message);
-        res.status(500).json({ success: false, error: 'Failed to perform token swap.' });
+        console.error("Error staking on Pendle:", error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Endpoint to fetch redemption options for a user
-app.get('/redemptions/:address', async (req, res) => {
+// 📌 (Future) Redeem PT Tokens
+app.post('/api/redeemTokens', async (req, res) => {
     try {
-        const userAddress = req.params.address;
-        const options = await pendleService.getRedemptionOptions(userAddress);
-        res.json({ success: true, data: options });
+        const { userAddress } = req.body;
+        if (!userAddress) {
+            return res.status(400).json({ error: "Missing userAddress" });
+        }
+
+        // Placeholder until redemption logic is implemented
+        res.json({ status: "pending", message: "Redemption logic to be implemented." });
+
     } catch (error) {
-        console.error('Error in /redemptions API:', error.message);
-        res.status(500).json({ success: false, error: 'Failed to fetch redemption options.' });
+        console.error("Error redeeming tokens:", error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
-
-// Start the server
+// Start Server
 app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
+    console.log(`StakeStoreService API is running on port ${PORT}`);
 });
