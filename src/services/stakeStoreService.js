@@ -27,6 +27,9 @@ const stakeStoreContract = new ethers.Contract(CONTRACT_ADDRESS, STAKESTORE_ABI,
 const DEFAULT_GAS_LIMIT = '10000000'; // Example gas limit
 const DEFAULT_GAS_PRICE = '1000000000'; // Example gas price (10 gwei)
 
+// Path to the active_markets.json file
+const activeMarketsPath = path.join(__dirname, 'active_markets.json');
+
 /**
  * Approve a spender to spend a specified amount of an ERC-20 token.
  */
@@ -107,8 +110,33 @@ const stakeOnPendle = async (user, token, amount, pool) => {
     }
 };
 
+// TODO: Once the expiration date is reached, the user can redeem their tokens
+const redeem = () => {
+
+}
+
+/**
+ * @desc Fetches the list of active markets from active_markets.json
+ */
+const getActiveMarkets = (req, res) => {
+    fs.readFile(activeMarketsPath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading active_markets.json:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        try {
+            const markets = JSON.parse(data);
+            res.json(markets);
+        } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            res.status(500).json({ error: 'Invalid JSON format' });
+        }
+    });
+};
 
 module.exports = {
     approveToken,
     stakeOnPendle,
+    getActiveMarkets,
 };
