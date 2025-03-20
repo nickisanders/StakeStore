@@ -79,21 +79,8 @@ This API powers the backend of the StakeStore application, enabling asset retrie
       "value": "0"
     }
 
-### **5. Stake Tokens on Pendle**
-- **URL**: `/api/stakeOnPendle`
+### **5. Redeem Tokens**
+- **URL**: `/api/redeem`
 - **Method**: `POST`
-- **Description**: Sends the staking transaction to Pendle and mints PT/YT tokens.
+- **Description**: 
 - **Request Body**:
-  ```json
-    {
-      "user": "0xUserAddress",
-      "token": "0xTokenAddress",
-      "amount": "1000000000000000000",
-      "pool": "0xPoolAddress"
-    }
-- **Response**:
-  ```json
-    {
-      "status": "success",
-      "txHash": "0xtransactionhash..."
-    }
