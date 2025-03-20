@@ -55,6 +55,20 @@ app.post('/api/getStakeTransactionData', async (req, res) => {
     }
 });
 
+// Get Current Holdings
+app.get('/api/getCurrentHoldings/:userAddress', async (req, res) => {
+    try {
+        const { userAddress } = req.params;
+        if (!userAddress) return res.status(400).json({ error: "User address is required" });
+
+        const holdings = await stakeStoreService.getCurrentHoldings(userAddress);
+        res.json(holdings);
+    } catch (error) {
+        console.error("Error fetching holdings:", error.message);
+        res.status(500).json({ error: "Failed to fetch holdings" });
+    }
+});
+
 // Redeem PT Tokens
 app.post('/api/redeemTokens', async (req, res) => {
     try {

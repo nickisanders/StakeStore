@@ -17,6 +17,11 @@ if (!RPC_URL || !PRIVATE_KEY) {
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 
+// ABI to interact with ERC-20 PT tokens (only `balanceOf` is needed)
+const ERC20_ABI = [
+    "function balanceOf(address owner) external view returns (uint256)"
+];
+
 // ABI of the StakeStore smart contract
 const STAKESTORE_ABI = [
     "function stakeTokens(address token, uint256 amount, address pool) public",
@@ -30,8 +35,9 @@ const stakeStoreContract = new ethers.Contract(CONTRACT_ADDRESS, STAKESTORE_ABI,
 const DEFAULT_GAS_LIMIT = '10000000'; // Example gas limit
 const DEFAULT_GAS_PRICE = '1000000000'; // Example gas price (10 gwei)
 
-// Path to the active_markets.json file
-const activeMarketsPath = path.join(__dirname, 'active_markets.json');
+// Load active markets JSON file
+const activeMarketsPath = path.resolve(__dirname, '../../active_markets.json');
+const activeMarkets = JSON.parse(fs.readFileSync(activeMarketsPath, 'utf8')).markets;
 
 /**
  * Approve a spender to spend a specified amount of an ERC-20 token.
@@ -135,6 +141,38 @@ const stakeOnPendle = async (user, token, amount, pool) => {
     }
 };
 
+/**
+ * Get all PT tokens the user holds in their connected wallet, including the pool's expiration date.
+ * @param {string} userAddress - The wallet address of the user.
+ * @returns {Promise<Object[]>} - A list of PT tokens with balances and expiration dates.
+ */
+const getCurrentHoldings = async (userAddress) => {
+    if (!userAddress) throw new Error("User address is required");
+
+    const holdings = [];
+
+    for (const market of activeMarkets) {
+        const ptTokenAddress = market.pt.split("-")[1]; // Extract PT token contract address
+        const ptContract = new ethers.Contract(ptTokenAddress, ERC20_ABI, provider);
+
+        try {
+            const balance = await ptContract.balanceOf(userAddress);
+            if (balance > 0) {
+                holdings.push({
+                    name: market.name,
+                    address: ptTokenAddress,
+                    balance: ethers.formatUnits(balance, 18), // Convert balance from Wei
+                    expiry: market.expiry // Include pool expiration date
+                });
+            }
+        } catch (error) {
+            console.error(`Error fetching balance for PT token ${market.name}:`, error.message);
+        }
+    }
+
+    return holdings;
+};
+
 // TODO: Once the expiration date is reached, the user can redeem their tokens
 const redeem = () => {
 
@@ -164,5 +202,7 @@ module.exports = {
     approveToken,
     getStakeTransactionData,
     stakeOnPendle,
+    getCurrentHoldings,
+    redeem,
     getActiveMarkets,
 };
