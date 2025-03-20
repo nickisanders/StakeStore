@@ -21,80 +21,79 @@ This API powers the backend of the StakeStore application, enabling asset retrie
     "message": "Welcome to StakeStore API!"
   }
 
-### **2. Get User Assets**
-- **URL**: `/assets`
-- **Method**: `GET`
-- **Description**: Fetches the user's assets and staking details.
-- **Query Parameters**: `walletAddress` (string, required): The user's wallet address.
-- **Response**:
-  ```json
-  {
-    "assets": [
-        { "asset": "ETH", "balance": 2.5, "staked": 1.0 },
-        { "asset": "USDC", "balance": 1000.0, "staked": 500.0 }
-    ]
-  }
-
-### **3. Get Active Markets**
-- **URL**: `/markets`
+### **2. Get Active Markets**
+- **URL**: `/api/markets`
 - **Method**: `GET`
 - **Description**: Fetches active staking markets from Pendle.
 - **Response**:
   ```json
     {
-        "data": [
-            {
-            "marketId": "1",
-            "asset": "ETH",
-            "apy": 12.5,
-            "lockupPeriod": 90,
-            "minStake": 0.1
-            },
-            {
-            "marketId": "2",
-            "asset": "USDC",
-            "apy": 8.0,
-            "lockupPeriod": 180,
-            "minStake": 100.0
-            }
-        ]
+      "markets": [
+        {
+          "name": "cbETH",
+          "address": "0x483f2e223c58a5ef19c4b32fbc6de57709749cb3",
+          "expiry": "2025-12-25T00:00:00.000Z",
+          "pt": "8453-0xe46c8ba948f8071b425a1f7ba45c0a65cbacea2e",
+          "yt": "8453-0xf9da8f69d518d7f6488179014f475e843ee2defd",
+          "sy": "8453-0x75372f72ec752a761e96cbcb3395f4b9586d9afd",
+          "underlyingAsset": "8453-0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22"
+        }
+      ]
     }
 
-### **4. Perform Token Swap**
-- **URL**: `/swap`
+### **3. Approve Token Transfer**
+- **URL**: `/api/approveToken`
 - **Method**: `POST`
-- **Description**: Executes a token swap using the Pendle API.
+- **Description**: Approves the StakeStore contract to transfer a given amount of a specific ERC-20 token.
 - **Request Body**:
   ```json
     {
-        "assetIn": "ETH",
-        "amountIn": "1.0",
-        "assetOut": "PT",
-        "market": "1"
+      "token": "0xTokenAddress",
+      "spender": "0xSpenderAddress",
+      "amount": "1000000000000000000"
     }
 - **Response**:
   ```json
     {
-        "data": {
-            "swapId": "abc123",
-            "assetOut": "PT",
-            "amountOut": "1.1"
-        }
+      "status": "success",
+      "txHash": "0xtransactionhash..."
     }
 
-### **4. Get Redemption Options**
-- **URL**: `/redemptions/:address`
-- **Method**: `GET`
-- **Description**: Retrieves redemption options for a user's PT tokens.
-- **URL Parameters**: `address` (string, required): The wallet address of the user.
+### **4. Get Staking Transaction Data**
+- **URL**: `/api/getStakeTransactionData`
+- **Method**: `POST`
+- **Description**: Constructs the transaction data required for staking. The frontend will sign and submit this transaction.
+- **Request Body**:
+  ```json
+    {
+      "userAddress": "0xUserAddress",
+      "token": "0xTokenAddress",
+      "amount": "1000000000000000000",
+      "pool": "0xPoolAddress"
+    }
 - **Response**:
   ```json
     {
-        "data": [
-            {
-            "asset": "ETH",
-            "amount": 1.0,
-            "redeemableAt": "2024-12-31T23:59:59Z"
-            }
-        ]
+      "to": "0xStakeStoreContractAddress",
+      "data": "0xEncodedTransactionData",
+      "value": "0"
+    }
+
+### **5. Stake Tokens on Pendle**
+- **URL**: `/api/stakeOnPendle`
+- **Method**: `POST`
+- **Description**: Sends the staking transaction to Pendle and mints PT/YT tokens.
+- **Request Body**:
+  ```json
+    {
+      "user": "0xUserAddress",
+      "token": "0xTokenAddress",
+      "amount": "1000000000000000000",
+      "pool": "0xPoolAddress"
+    }
+- **Response**:
+  ```json
+    {
+      "status": "success",
+      "txHash": "0xtransactionhash..."
     }
