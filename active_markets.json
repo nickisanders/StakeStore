@@ -1,0 +1,67 @@
+{
+  "markets": [
+    {
+      "name": "cbETH",
+      "address": "0x483f2e223c58a5ef19c4b32fbc6de57709749cb3",
+      "expiry": "2025-12-25T00:00:00.000Z",
+      "pt": "8453-0xe46c8ba948f8071b425a1f7ba45c0a65cbacea2e",
+      "yt": "8453-0xf9da8f69d518d7f6488179014f475e843ee2defd",
+      "sy": "8453-0x75372f72ec752a761e96cbcb3395f4b9586d9afd",
+      "underlyingAsset": "8453-0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22"
+    },
+    {
+      "name": "LBTC",
+      "address": "0x727cebacfb10ffd353fc221d06a862b437ec1735",
+      "expiry": "2025-05-29T00:00:00.000Z",
+      "pt": "8453-0x5d746848005507da0b1717c137a10c30ad9ee307",
+      "yt": "8453-0x5fd84c3dd5c00ab9e04bd94685b55e8dd0c1e3fd",
+      "sy": "8453-0xb261266cb30c255cb9c73ebf4a3ead9398d23ab4",
+      "underlyingAsset": "8453-0xecac9c5f704e954931349da37f60e39f515c11c1"
+    },
+    {
+      "name": "mUSDC",
+      "address": "0x3124d41708edbdc7995a55183e802e3d9d0d5ef1",
+      "expiry": "2025-06-26T00:00:00.000Z",
+      "pt": "8453-0x2a9e9256e0d1ad0f7f9d7c7248cb7e2f06072deb",
+      "yt": "8453-0xe84009923221bb401c811643c5a5efaf56eed4ca",
+      "sy": "8453-0xc40febf5a33b8c92b187d9be0fd3fe0ac2e4b07c",
+      "underlyingAsset": "8453-0xedc817a28e8b93b03976fbd4a3ddbc9f7d176c22"
+    },
+    {
+      "name": "mcbBTC",
+      "address": "0xd94fd7bceb29159405ae1e06ce80e51ef1a484b0",
+      "expiry": "2025-06-26T00:00:00.000Z",
+      "pt": "8453-0x5c6593f57ee95519ff6a8cd16a5e41ff50af239a",
+      "yt": "8453-0xdc2ffc7b4bd5a38d5842e5fdbb407e731dd30796",
+      "sy": "8453-0x7f5efa1bb887a5080ceacd6f3e2c0fc16bd90c90",
+      "underlyingAsset": "8453-0xf877acafa28c19b96727966690b2f44d35ad5976"
+    },
+    {
+      "name": "wsuperOETHb",
+      "address": "0xecc2c994aa0c599a7f69a7cfb9106fe4dffb4341",
+      "expiry": "2025-06-26T00:00:00.000Z",
+      "pt": "8453-0x25d2b7e3b71f4edcc366e79134570704a079923a",
+      "yt": "8453-0x1188331820daa0a8af69c0779334d53cb4a9cef1",
+      "sy": "8453-0x67507f3e26e7e2fd0a42c48fbc85069ccfcbd2ff",
+      "underlyingAsset": "8453-0x7fcd174e80f264448ebee8c88a7c4476aaf58ea6"
+    },
+    {
+      "name": "sUSDz",
+      "address": "0x14936c9b8eb798ca6291c2d6ce5de2c6cb5f1f9c",
+      "expiry": "2025-03-27T00:00:00.000Z",
+      "pt": "8453-0xc1e4d7ca05045dfbc654b67e11124901148b1266",
+      "yt": "8453-0xb80b9f31064be8a97e4ced4e1368f45826c59868",
+      "sy": "8453-0xff702347d81725ed8bbe341392af511e29cfed98",
+      "underlyingAsset": "8453-0xe31ee12bdfdd0573d634124611e85338e2cbf0cf"
+    },
+    {
+      "name": "VIRTUAL/cbBTC",
+      "address": "0x621d4d92e9bed484e6d2cb8a37d342c804a0908c",
+      "expiry": "2025-06-26T00:00:00.000Z",
+      "pt": "8453-0x603e2d1af3d0673f4af756b6e12a2044bfebb714",
+      "yt": "8453-0xce714a2ce5ecec1ba7efdc6456f12c4e7b46fa69",
+      "sy": "8453-0x02adf72d5d06a9c92136562eb237c07696833a84",
+      "underlyingAsset": "8453-0xb909f567c5c2bb1a4271349708cc4637d7318b4a"
+    }
+  ]
+}

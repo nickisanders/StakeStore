@@ -1,4 +1,4 @@
-const { createMintTokensTransaction } = require('../../src/services/pendleService.js');
+const { createMintTokensTransaction } = require('../src/services/pendleService.js');
 
 const mintData = {
     yt: '0xe84009923221bb401c811643c5a5efaf56eed4ca',

@@ -56,9 +56,24 @@ const approveToken = async (tokenAddress, spender, amount) => {
 
 /**
  * Send a transaction to mint PT/YT tokens using the data from createMintTokensTransaction.
+ * mintData = {
+ *      yt,
+        slippage,
+        tokenIn,
+        amountIn
+    }
  */
-const sendMintTokensTransaction = async (mintData) => {
+const stakeOnPendle = async (user, token, amount, pool) => {
     try {
+        console.log(`Minting PT/YT for ${user} using token ${token} at pool ${pool}`);
+
+        const mintData = {
+            yt: pool,
+            slippage: 0.01,
+            enableAggregator: true,
+            tokenIn: token,
+            amountIn: amount,
+        };
         const mintTxData = await createMintTokensTransaction(mintData);
 
         if (!mintTxData) {
@@ -83,41 +98,17 @@ const sendMintTokensTransaction = async (mintData) => {
         const receipt = await txResponse.wait();
 
         console.log('Transaction confirmed:', receipt.transactionHash);
-        return receipt;
+
+        //TODO: Send minted PT tokens back
+
     } catch (error) {
         console.error('Error sending mint tokens transaction:', error.message);
         throw new Error(`Failed to send mint tokens transaction: ${error.message}`);
     }
 };
 
-/**
- * Create a transaction for a user to call the stakeTokens function.
- */
-const createStakeTokensTransaction = async (tokenAddress, amount, poolAddress) => {
-    try {
-        const gasLimit = await stakeStoreContract.estimateGas.stakeTokens(tokenAddress, amount, poolAddress, {
-            from: signer.address,
-        });
-
-        const tx = await stakeStoreContract.populateTransaction.stakeTokens(
-            tokenAddress,
-            amount,
-            poolAddress
-        );
-
-        tx.gasLimit = gasLimit;
-        tx.gasPrice = await provider.getGasPrice();
-
-        console.log('StakeTokens Transaction Data:', tx);
-        return tx;
-    } catch (error) {
-        console.error('Error creating stakeTokens transaction:', error.message);
-        throw new Error('Failed to create stakeTokens transaction.');
-    }
-};
 
 module.exports = {
     approveToken,
-    sendMintTokensTransaction,
-    createStakeTokensTransaction,
+    stakeOnPendle,
 };

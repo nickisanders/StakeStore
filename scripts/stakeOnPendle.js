@@ -1,4 +1,4 @@
-const { sendMintTokensTransaction } = require('../src/services/stakeStoreService.js');
+const { stakeOnPendle } = require('../src/services/stakeStoreService.js');
 
 const mintData = {
     yt: '0xe84009923221bb401c811643c5a5efaf56eed4ca',
@@ -8,7 +8,7 @@ const mintData = {
     amountIn: '100000000000000',
 };
 
-sendMintTokensTransaction(mintData)
+stakeOnPendle(mintData)
     .then(() => {
         console.log('Mint tokens transaction sent successfully');
     })
