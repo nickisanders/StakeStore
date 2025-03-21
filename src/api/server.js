@@ -71,18 +71,18 @@ app.get('/api/getCurrentHoldings/:userAddress', async (req, res) => {
 
 // Redeem PT Tokens
 app.post('/api/redeemTokens', async (req, res) => {
+    const { userAddress, marketAddress } = req.body;
+
+    if (!userAddress || !marketAddress) {
+        return res.status(400).json({ error: 'Missing required parameters: userAddress or marketAddress' });
+    }
+
     try {
-        const { userAddress } = req.body;
-        if (!userAddress) {
-            return res.status(400).json({ error: "Missing userAddress" });
-        }
-
-        // Placeholder until redemption logic is implemented
-        res.json({ status: "pending", message: "Redemption logic to be implemented." });
-
+        const txData = await getRedeemTransactionData(userAddress, marketAddress);
+        res.json(txData);
     } catch (error) {
-        console.error("Error redeeming tokens:", error.message);
-        res.status(500).json({ error: error.message });
+        console.error('Error in redeemTokens endpoint:', error.message);
+        res.status(500).json({ error: 'Failed to get redeem transaction data' });
     }
 });
 

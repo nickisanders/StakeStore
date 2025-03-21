@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
-const { createMintTokensTransaction } = require('./pendleService');
+const { createMintTokensTransaction, getRedeemTransaction } = require('./pendleService');
 
 // Environment variables
 const RPC_URL = process.env.RPC_URL;
@@ -173,10 +173,25 @@ const getCurrentHoldings = async (userAddress) => {
     return holdings;
 };
 
-// TODO: Once the expiration date is reached, the user can redeem their tokens
-const redeem = () => {
+/**
+ * Wrapper to get redeem transaction data for a user's matured PT tokens.
+ * @param {string} userAddress - The user's wallet address.
+ * @param {string} marketAddress - The market address of the PT token.
+ * @returns {Promise<Object>} - Transaction data to be signed by the user.
+ */
+const getRedeemTransactionData = async (userAddress, marketAddress) => {
+    if (!userAddress || !marketAddress) {
+        throw new Error('Missing required parameters: userAddress or marketAddress');
+    }
 
-}
+    try {
+        const txData = await getRedeemTransaction(userAddress, marketAddress);
+        return txData;
+    } catch (err) {
+        console.error('Error getting redeem transaction data:', err.message);
+        throw new Error('Failed to get redeem transaction data');
+    }
+};
 
 /**
  * @desc Fetches the list of active markets from active_markets.json
@@ -203,6 +218,6 @@ module.exports = {
     getStakeTransactionData,
     stakeOnPendle,
     getCurrentHoldings,
-    redeem,
+    getRedeemTransactionData,
     getActiveMarkets,
 };

@@ -77,32 +77,6 @@ const getMarketData = async (address) => {
 };
 
 /**
- * Calculate the rate that could be earned by staking with Pendle.
- * @param {string} asset - The asset address.
- * @param {number} lockupPeriod - The lockup period in days.
- * @returns {Promise<Object>} The APY data.
- */
-const calculateRate = async (asset, lockupPeriod) => {
-    try {
-        const marketData = await getMarketData(asset);
-
-        // Process the market data to calculate the APY
-        const apy = marketData.underlyingApy;
-        const rate = Math.pow(1 + apy / 365, lockupPeriod) - 1;
-
-        return {
-            asset,
-            lockupPeriod,
-            apy,
-            rate,
-        };
-    } catch (error) {
-        console.error('Error calculating APY:', error.message);
-        throw new Error('Failed to calculate APY.');
-    }
-};
-
-/**
  * Create mint PT/YT tokens transaction.
  * @param {Object} mintData - The data required to mint PT/YT tokens.
  * mintData = {
@@ -163,30 +137,38 @@ const performSwap = async (poolId, token, requiredAmount, treasuryWallet) => {
 };
 
 /**
- * Fetch token redemption options.
- * @param {string} userAddress - The user's wallet address.
- * @param {number} chainId - The chain ID (default: BASE).
- * @returns {Promise<Object>} Redemption options for the user.
+ * Construct a redeem transaction for a user’s matured PT tokens.
+ * @param {string} userAddress - The user’s wallet address.
+ * @param {string} marketAddress - The Pendle market address.
+ * @returns {Promise<object>} Transaction data to be signed by the user.
  */
-const getRedemptionOptions = async (userAddress) => {
+const getRedeemTransaction = async (userAddress, marketAddress) => {
     try {
-        const response = await axios.get(`${PENDLE_API_BASE_URL}/v1/${CHAIN_ID}/positions`, {
-            params: { owner: userAddress },
+        const response = await axios.post(`${PENDLE_API_BASE_URL}/sdk/redeem`, {
+            chainId: CHAIN_ID,
+            userAddress,
+            marketAddress,
+            tokenType: 'PT'
         });
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching redemption options:', error.response ? error.response.data : error.message);
-        throw new Error('Failed to fetch redemption options.');
+
+        const tx = response.data?.tx;
+        if (!tx) throw new Error('No transaction data returned from Pendle redeem endpoint.');
+
+        console.log('Redeem transaction:', tx);
+        return tx;
+    } catch (err) {
+        console.error('Failed to get redeem transaction:', err.message);
+        throw new Error('Could not construct redeem transaction');
     }
 };
+
 
 module.exports = {
     getActiveMarkets,
     fetchActiveMarketsAndWriteToFile,
     readActiveMarketsFromFile,
     getMarketData,
-    calculateRate,
     createMintTokensTransaction,
     performSwap,
-    getRedemptionOptions,
+    getRedeemTransaction,
 };
